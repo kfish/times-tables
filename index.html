@@ -1,0 +1,27 @@
+<html>
+
+<head>
+	<title>Times Tables</title>
+	<script src="elm.js"></script>
+	<style>
+	</style>
+</head>
+
+<body>
+<div id="column">
+	<h1>Times Tables</h1>
+
+	<p>Bloody math eh?</p>
+
+	<div id="elm-times-tables">
+</div>
+</body>
+
+<script type="text/javascript">
+	var div = document.getElementById('elm-times-tables');
+	var tt = Elm.embed(Elm.Main, div);
+
+	// May need to make a proper main function, and foldp such that there
+	// is an output : Signal String to read from a port here
+</script>
+</html>
