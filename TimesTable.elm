@@ -1,8 +1,10 @@
-module Counter where
+module TimesTable where
 
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
+
+import StartApp.Simple exposing (start)
 
 ----------------------------------------------------------------------
 -- Model
@@ -55,3 +57,15 @@ countStyle =
     , ("width", "50px")
     , ("text-align", "center")
     ]
+
+----------------------------------------------------------------------
+-- Main
+--
+
+main =
+  start
+    { model = 7
+    , update = update
+    , view = view
+    }
+
