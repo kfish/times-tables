@@ -13,7 +13,9 @@
 
 	<p>Bloody math eh?</p>
 
-	<div id="elm-times-tables">
+	<div id="elm-times-tables"></div>
+
+  <p>The current time is <span id="goo-boo">0</span>, duuude.</p>
 </div>
 </body>
 
@@ -23,5 +25,10 @@
 
 	// May need to make a proper main function, and foldp such that there
 	// is an output : Signal String to read from a port here
+  var fooey = document.getElementById('goo-boo');
+  tt.ports.smud.subscribe(function(texytexy) {
+    console.log(texytexy);
+    fooey.innerHTML = texytexy;
+  });
 </script>
 </html>

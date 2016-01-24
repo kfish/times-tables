@@ -1,16 +1,24 @@
 module TimesTable where
 
+import Effects exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 
-import StartApp.Simple exposing (start)
+import Task exposing (Task) import TaskTutorial exposing (print)
+import Time exposing (second, Time)
+
+import StartApp exposing (start)
+
+import Datastructures.Queue
 
 ----------------------------------------------------------------------
 -- Model
 --
 
-type alias Model = Int
+type alias Model =
+  { currentBase : Int
+  }
 
 ----------------------------------------------------------------------
 -- Update
@@ -18,11 +26,11 @@ type alias Model = Int
 
 type Action = Increment | Decrement
 
-update : Action -> Model -> Model
+update : Action -> Model -> (Model, Effects Action)
 update action model =
   case action of
-    Increment -> model + 1
-    Decrement -> model - 1
+    Increment -> (Model (model.currentBase + 1), Effects.none)
+    Decrement -> (Model (model.currentBase - 1), Effects.none)
 
 ----------------------------------------------------------------------
 -- View
@@ -33,18 +41,18 @@ view address model =
   div []
     [ div []
       [ button [ onClick address Decrement ] [ text "-" ]
-      , div [countStyle] [ text (toString model) ]
+      , div [countStyle] [ text (toString model.currentBase) ]
       , button [ onClick address Increment ] [ text "+" ]
       ]
     , timesTable model
     ]
 
-timesTable : Int -> Html
-timesTable val =
+timesTable : Model -> Html
+timesTable model =
   let mul x y = toString x ++ " times " ++ toString y ++ " is " ++ toString (x*y)
   in
   ul []
-    (List.map (\y -> li [] [text (mul val y)]) [1..20])
+    (List.map (\y -> li [] [text (mul (model.currentBase) y)]) [1..20])
     -- [ text (mul val 7) ]
   
 
@@ -59,13 +67,40 @@ countStyle =
     ]
 
 ----------------------------------------------------------------------
+-- Ports
+--
+
+-- A signal that updates to the current time every second
+clock : Signal Time
+clock =
+  Time.every second
+
+{-
+-- Turn the clock into a signal of tasks
+printTasks : Signal (Task x ())
+printTasks =
+  Signal.map print clock
+
+-- Actually perform all those tasks
+port runner : Signal (Task x ())
+port runner =
+  printTasks
+-}
+
+port smud : Signal String
+-- port smud = Signal.map toString clock
+port smud = Signal.map (toString << .currentBase) app.model
+
+----------------------------------------------------------------------
 -- Main
 --
 
-main =
+app =
   start
-    { model = 7
+    { init = ( Model 8, Effects.none )
     , update = update
     , view = view
+    , inputs = []
     }
 
+main = app.html
