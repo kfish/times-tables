@@ -30,18 +30,18 @@ init = Model 8 Queue.init "Foo"
 -- Update
 --
 
-type Action = Increment | Decrement | Tick Time
+type Action = Increment | Decrement | SpeechDone
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   case action of
     Increment -> (setBase (model.currentBase + 1) model, Effects.none)
     Decrement -> (setBase (model.currentBase - 1) model, Effects.none)
-    Tick _    ->
+    SpeechDone ->
       let
         (top, q) = Queue.dequeue model.sayQueue
         msg = case top of
-          Nothing -> "Nothing to say"
+          Nothing -> ""
           Just s  -> s
       in
         (Model model.currentBase q msg, Effects.none)
@@ -97,13 +97,15 @@ countStyle =
 -- Ports
 --
 
+
+
 -- A signal that updates to the current time every second
-clock : Signal Time
-clock =
-  Time.every second
+-- clock : Signal Time
+-- clock =
+--   Time.every (5 * second)
 
 ticker : Signal Action
-ticker = Signal.map Tick clock
+ticker = Signal.map (always SpeechDone) (Time.every (5 * second))
 
 {-
 -- Turn the clock into a signal of tasks
@@ -120,7 +122,16 @@ port runner =
 port smud : Signal String
 -- port smud = Signal.map toString clock
 -- port smud = Signal.map (toString << .currentBase) app.model
-port smud = Signal.map .sayNow app.model
+port smud = Signal.filter (\s -> s /= "") "" (Signal.map .sayNow app.model)
+
+port baseValue : Signal Int
+port baseValue = Signal.dropRepeats (Signal.map .currentBase app.model)
+
+-- Events from JS
+port reset : Signal ()
+
+speechDone : Signal Action
+speechDone = Signal.map (always SpeechDone) reset
 
 ----------------------------------------------------------------------
 -- Main
@@ -131,7 +142,7 @@ app =
     { init = ( init, Effects.none )
     , update = update
     , view = view
-    , inputs = [ticker]
+    , inputs = [speechDone]
     }
 
 main = app.html
