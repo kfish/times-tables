@@ -5,12 +5,13 @@ import Html exposing (..)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 
-import Task exposing (Task) import TaskTutorial exposing (print)
+import Task exposing (Task)
+import TaskTutorial exposing (print)
 import Time exposing (second, Time)
 
 import StartApp exposing (start)
 
-import Datastructures.Queue
+import Datastructures.Queue as Queue
 
 ----------------------------------------------------------------------
 -- Model
@@ -18,24 +19,45 @@ import Datastructures.Queue
 
 type alias Model =
   { currentBase : Int
+  , sayQueue : Queue.Queue String
+  , sayNow : String
   }
+
+init : Model
+init = Model 8 Queue.init "Foo"
 
 ----------------------------------------------------------------------
 -- Update
 --
 
-type Action = Increment | Decrement
+type Action = Increment | Decrement | Tick Time
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   case action of
-    Increment -> (Model (model.currentBase + 1), Effects.none)
-    Decrement -> (Model (model.currentBase - 1), Effects.none)
+    Increment -> (setBase (model.currentBase + 1) model, Effects.none)
+    Decrement -> (setBase (model.currentBase - 1) model, Effects.none)
+    Tick _    ->
+      let
+        (top, q) = Queue.dequeue model.sayQueue
+        msg = case top of
+          Nothing -> "Nothing to say"
+          Just s  -> s
+      in
+        (Model model.currentBase q msg, Effects.none)
+
+setBase : Int -> Model -> Model
+setBase base model =
+  let
+    tt = timesTable base
+    -- q = List.foldl Queue.enqueue model.sayQueue tt
+    q = List.foldl Queue.enqueue Queue.init tt
+  in
+    Model base q model.sayNow
 
 ----------------------------------------------------------------------
 -- View
---
-
+-- 
 view : Signal.Address Action -> Model -> Html
 view address model =
   div []
@@ -44,11 +66,16 @@ view address model =
       , div [countStyle] [ text (toString model.currentBase) ]
       , button [ onClick address Increment ] [ text "+" ]
       ]
-    , timesTable model
+    , timesTableView model
     ]
 
-timesTable : Model -> Html
-timesTable model =
+timesTable : Int -> List String
+timesTable base =
+  let mul x y = toString x ++ " times " ++ toString y ++ " is " ++ toString (x*y)
+  in List.map (mul base) [1..20]
+
+timesTableView : Model -> Html
+timesTableView model =
   let mul x y = toString x ++ " times " ++ toString y ++ " is " ++ toString (x*y)
   in
   ul []
@@ -75,6 +102,9 @@ clock : Signal Time
 clock =
   Time.every second
 
+ticker : Signal Action
+ticker = Signal.map Tick clock
+
 {-
 -- Turn the clock into a signal of tasks
 printTasks : Signal (Task x ())
@@ -89,7 +119,8 @@ port runner =
 
 port smud : Signal String
 -- port smud = Signal.map toString clock
-port smud = Signal.map (toString << .currentBase) app.model
+-- port smud = Signal.map (toString << .currentBase) app.model
+port smud = Signal.map .sayNow app.model
 
 ----------------------------------------------------------------------
 -- Main
@@ -97,10 +128,10 @@ port smud = Signal.map (toString << .currentBase) app.model
 
 app =
   start
-    { init = ( Model 8, Effects.none )
+    { init = ( init, Effects.none )
     , update = update
     , view = view
-    , inputs = []
+    , inputs = [ticker]
     }
 
 main = app.html
