@@ -24,7 +24,7 @@ type alias Model =
   }
 
 init : Model
-init = Model 8 Queue.init "Foo"
+init = Model 7 Queue.init "Good morning"
 
 ----------------------------------------------------------------------
 -- Update
@@ -133,13 +133,16 @@ port reset : Signal ()
 speechDone : Signal Action
 speechDone = Signal.map (always SpeechDone) reset
 
+startSpeech : Effects Action
+startSpeech = Effects.task (Task.succeed SpeechDone)
+
 ----------------------------------------------------------------------
 -- Main
 --
 
 app =
   start
-    { init = ( init, Effects.none )
+    { init = ( setBase 7 init, Effects.none )
     , update = update
     , view = view
     , inputs = [speechDone]
