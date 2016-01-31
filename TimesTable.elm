@@ -40,11 +40,14 @@ update action model =
     SpeechDone ->
       let
         (top, q) = Queue.dequeue model.sayQueue
-        msg = case top of
-          Nothing -> ""
-          Just s  -> s
+        result = case top of
+          Nothing ->
+            let next = if model.currentBase < 40 then model.currentBase+1 else 7
+            in (setBase next model, Effects.none)
+          Just s  ->
+            (Model model.currentBase q s, Effects.none)
       in
-        (Model model.currentBase q msg, Effects.none)
+        result
 
 setBase : Int -> Model -> Model
 setBase base model =
