@@ -32,6 +32,14 @@
     tt.ports.reset.send([]);
   });
 
+  tt.ports.pauseState.subscribe(function(paused) {
+    if (paused) {
+      window.speechSynthesis.cancel();
+    } else {
+      tt.ports.reset.send([]);
+    }
+  });
+
   tt.ports.smud.subscribe(function(msg) {
     console.log(msg);
     sayNow.innerHTML = msg;

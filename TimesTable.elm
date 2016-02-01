@@ -19,22 +19,24 @@ import Datastructures.Queue as Queue
 
 type alias Model =
   { currentBase : Int
+  , paused : Bool
   , sayQueue : Queue.Queue String
   , sayNow : String
   }
 
 init : Model
-init = Model 7 Queue.init "Good morning"
+init = Model 7 True Queue.init "Good morning"
 
 ----------------------------------------------------------------------
 -- Update
 --
 
-type Action = Increment | Decrement | SpeechDone
+type Action = Increment | Decrement | Pause | SpeechDone
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   case action of
+    Pause -> (togglePause model, Effects.none)
     Increment -> (setBase (model.currentBase + 1) model, Effects.none)
     Decrement -> (setBase (model.currentBase - 1) model, Effects.none)
     SpeechDone ->
@@ -45,9 +47,11 @@ update action model =
             let next = if model.currentBase < 40 then model.currentBase+1 else 7
             in (setBase next model, Effects.none)
           Just s  ->
-            (Model model.currentBase q s, Effects.none)
+            ({ model | sayQueue = q, sayNow = s}, Effects.none)
       in
-        result
+        case model.paused of
+          True  -> ({ model | sayNow = "" }, Effects.none)
+          False -> result
 
 setBase : Int -> Model -> Model
 setBase base model =
@@ -56,7 +60,10 @@ setBase base model =
     -- q = List.foldl Queue.enqueue model.sayQueue tt
     q = List.foldl Queue.enqueue Queue.init tt
   in
-    Model base q model.sayNow
+    { model | currentBase = base, sayQueue = q }
+
+togglePause : Model -> Model
+togglePause model = { model | paused = not model.paused, sayNow = "" }
 
 ----------------------------------------------------------------------
 -- View
@@ -65,6 +72,9 @@ view : Signal.Address Action -> Model -> Html
 view address model =
   div []
     [ div []
+      [ button [ onClick address Pause ] [ text "Pause" ]
+      ]
+    , div []
       [ button [ onClick address Decrement ] [ text "-" ]
       , div [countStyle] [ text (toString model.currentBase) ]
       , button [ onClick address Increment ] [ text "+" ]
@@ -129,6 +139,9 @@ port smud = Signal.filter (\s -> s /= "") "" (Signal.map .sayNow app.model)
 
 port baseValue : Signal Int
 port baseValue = Signal.dropRepeats (Signal.map .currentBase app.model)
+
+port pauseState : Signal Bool
+port pauseState = Signal.dropRepeats (Signal.map .paused app.model)
 
 -- Events from JS
 port reset : Signal ()
